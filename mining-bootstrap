@@ -1,0 +1,393 @@
+#!/bin/bash
+
+OSNAME=`cat /etc/issue | awk '{print $1}'`
+OSNUM=`cat /etc/issue | awk '{print $2}'`
+RADEONPRESENT=`lspci | grep VGA | grep -c Radeon`
+AMDSDKNAM="AMD-APP-SDK-v2.9-lnx64.tgz"
+AMDSDKSUM="24ca89856d41aa82dea8370b7a24fb4e"
+
+# Display yellow warning output
+function cwarn() {
+        COLOR='\033[01;33m'     # bold green
+        RESET='\033[00;00m'     # normal white
+        MESSAGE=${@:-"${RESET}Error: No message passed"}
+        echo -e "${COLOR}${MESSAGE}${RESET}"
+}
+
+# Display red error output
+function cerr() {
+        COLOR='\033[01;31m'     # bold red
+        RESET='\033[00;00m'     # normal white
+        MESSAGE=${@:-"${RESET}Error: No message passed"}
+        echo -e "${COLOR}${MESSAGE}${RESET}"
+}
+
+# Display green warning output
+function cinfo() {
+        COLOR='\033[01;32m'     # bold green
+        RESET='\033[00;00m'     # normal white
+        MESSAGE=${@:-"${RESET}Error: No message passed"}
+        echo -e "${COLOR}${MESSAGE}${RESET}"
+}
+
+function check_status() {
+	local status=$1
+	if [ $status -gt 0 ]
+	then
+		cerr "Something went wrong, please check you settings and try again."
+		exit 1
+	fi
+}
+
+if [ $RADEONPRESENT -lt 1 ]
+then
+	cerr "It seems you don't have an AMD Radeon present. Can't continue without one..."
+	exit 1
+else 
+	cinfo "Found the following Radeon device(s):"
+	cwarn `lspci | grep VGA | grep Radeon | awk 'match($0,"controller:"){print substr($0,RSTART+12)}'`
+	cinfo "Continuing..."
+fi
+
+if [ "$OSNAME" == "Ubuntu" ]
+then
+	cinfo "Ubuntu version $OSNUM found, continuing..."
+else
+	cerr "This script is designed for Ubuntu, cancelling..."
+	exit 1
+fi
+
+if [ `arch` == "x86_64" ];
+then	
+	cinfo "64 bit OS found, continuing..."
+else
+	cerr "32 bit OS not supported. Please install 64 bit OS to continue (Are you really still running a 32 bit processor?)"
+	exit 1
+fi
+
+cwarn "######################################################"
+cwarn "#Installing prerequisites, this may take some time...#"
+cwarn "######################################################"
+cd ~
+check_status $?
+
+if [ -d "./mine-working" ]
+then
+	cwarn "Working directory exists, will not re-create"
+else
+	mkdir mine-working
+fi
+check_status $?
+
+cd mine-working
+check_status $?
+
+cinfo "Adding BFGMiner Repository..."
+sudo add-apt-repository -y ppa:unit3/bfgminer
+check_status $?
+
+sudo apt-get update
+check_status $? 
+
+cinfo "Installing BFGMiner..."
+sudo apt-get -y install bfgminer
+check_status $?
+
+cinfo "Installing Apache, PHP, and miner.php..."
+sudo apt-get -y install apache2 apache2-utils libapache2-mod-php5 libapr1 libaprutil1 git
+check_status $?
+sudo wget https://raw.github.com/kanoi/cgminer/master/miner.php -O /var/www/index.php
+check_status $?
+if [ -f /var/www/index.html ]
+then
+	sudo mv /var/www/index.html /var/www/index.html.old
+	check_status $?
+fi
+
+cinfo "Installing Ubuntu AMD driver packages, this will take some time..."
+sudo apt-get -y install fglrx-updates fglrx-amdcccle-updates
+check_status $?
+
+cinfo "Configuring AMD graphics adapters..."
+sudo amdconfig --adapter=all --initial
+check_status $?
+
+cinfo "Downloading AMD APP SDK..."
+if [ -f $AMDSDKNAM ]
+then
+	cwarn "File $AMDSDKNAM exists, checking md5 hash..."
+	if [ $AMDSDKSUM == `md5sum ./$AMDSDKNAM | awk '{print $1}'` ]
+	then
+		cinfo "File is OK! Skipping Download."
+	else
+		cerr "File is corrupt, redownloading..."
+		rm -f ./$AMDSDKNAM
+		check_status $?
+		wget http://162.243.73.208/$AMDSDKNAM
+		check_status $?
+	fi
+else
+        wget http://162.243.73.208/$AMDSDKNAM
+        check_status $?
+fi
+
+cinfo "Extracting AMD APP SDK..."
+
+cd ~
+check_status $?
+
+cd mine-working
+check_status $?
+
+tar vxzf $AMDSDKNAM
+check_status $?
+
+cinfo "Installing AMD APP SDK (for openCL support)..."
+sed "s/alarm(60);/alarm(1);/g" -i default-install_lnx_64.pl
+sudo ./Install-AMD-APP.sh
+check_status $?
+rm -rf ~/mine-working
+check_status $?
+cinfo "It appears everything installed correctly!"
+echo ''
+cwarn "Creating sample configuration files..."
+cd ~
+check_status $?
+if [ ! -d "Mining" ]
+then
+	mkdir Mining
+	check_status $?
+fi
+cd Mining
+check_status $?
+if [ ! -d "configs" ]
+then
+	mkdir configs
+	check_status $?
+fi
+cd configs
+check_status $?
+echo ''
+if [ -f "dogecoin.conf" ]
+then
+	cwarn "dogecoin.conf exists, skipping..."
+else
+cinfo "Dogecoin..."
+echo '-----------'
+echo "Pools include:"
+cwarn "http://doge.netcodepool.org"
+cwarn "http://dogepool.pw"
+echo '{
+"pools" : [
+	{
+		"url" : "stratum+tcp://doge.netcodepool.org:4093",
+		"user" : "user.1",
+		"pass" : "x"
+	},
+	{
+		"url" : "stratum+tcp://dogepool.pw:3333",
+		"user" : "user.1",
+		"pass" : "x"
+	}
+],
+"temp-cutoff" : "95",
+"temp-target" : "90",
+"temp-overheat" : "92",
+"api-mcast-port" : "4028",
+"api-port" : "4028",
+"api-listen" : true,
+"api-allow" : "W: 127.0.0.1",
+"expiry" : "120",
+"expiry-lp" : "3600",
+"log" : "5",
+"no-pool-disable" : true,
+"no-show-processors" : true,
+"no-show-procs" : true,
+"no-unicode" : true,
+"queue" : "1",
+"scan-time" : "60",
+"skip-security-checks" : "0",
+"submit-stale" : true,
+"temp-hysteresis" : "3",
+"shares" : "0",
+"scrypt" : true,
+"scan" : "opencl:auto"
+}' > ./dogecoin.conf
+check_status $?
+fi
+
+echo ''
+if [ -f "litecoin.conf" ]
+then
+	cwarn "litecoin.conf exists, skipping..."
+else
+cinfo "Litecoin..."
+echo '-----------'
+echo "Pools include:"
+cwarn "http://www.netcodepool.org"
+cwarn "http://give-me-coins.com"
+echo '{
+"pools" : [
+	{
+		"url" : "stratum+tcp://www.netcodepool.org:3333",
+		"user" : "user.1",
+		"pass" : "x"
+	},
+	{
+		"url" : "stratum+tcp://ltc.give-me-coins.com:3333",
+		"user" : "user.1",
+		"pass" : "x"
+	}
+],
+"temp-cutoff" : "95",
+"temp-target" : "90",
+"temp-overheat" : "92",
+"api-mcast-port" : "4028",
+"api-port" : "4028",
+"api-listen" : true,
+"api-allow" : "W: 127.0.0.1",
+"expiry" : "120",
+"expiry-lp" : "3600",
+"log" : "5",
+"no-pool-disable" : true,
+"no-show-processors" : true,
+"no-show-procs" : true,
+"no-unicode" : true,
+"queue" : "1",
+"scan-time" : "60",
+"skip-security-checks" : "0",
+"submit-stale" : true,
+"temp-hysteresis" : "3",
+"shares" : "0",
+"scrypt" : true,
+"scan" : "opencl:auto"
+}' > ./litecoin.conf
+fi
+
+echo ''
+if [ -f "worldcoin.conf" ]
+then
+	cwarn "worldcoin.conf exists, skipping..."
+else
+cinfo "Worldcoin..."
+echo '------------'
+echo "Pools include:"
+cwarn "http://wdc.d2.cc"
+cwarn "http://coinex.pw"
+echo '{
+"pools" : [
+	{
+		"url" : "stratum+tcp://pool.d2.cc:3335",
+		"user" : "user.1",
+		"pass" : "x"
+	},
+	{
+		"url" : "stratum+tcp://pool2.d2.cc:3335",
+		"user" : "user.1",
+		"pass" : "x"
+	},
+	{
+		"url" : "stratum+tcp://stratum.coinex.pw:9006",
+		"user" : "user.1",
+		"pass" : "x"
+	}
+],
+"temp-cutoff" : "95",
+"temp-target" : "90",
+"temp-overheat" : "92",
+"api-mcast-port" : "4028",
+"api-port" : "4028",
+"api-listen" : true,
+"api-allow" : "W: 127.0.0.1",
+"expiry" : "120",
+"expiry-lp" : "3600",
+"log" : "5",
+"no-pool-disable" : true,
+"no-show-processors" : true,
+"no-show-procs" : true,
+"no-unicode" : true,
+"queue" : "1",
+"scan-time" : "60",
+"skip-security-checks" : "0",
+"submit-stale" : true,
+"temp-hysteresis" : "3",
+"shares" : "0",
+"scrypt" : true,
+"scan" : "opencl:auto"
+}' > ./worldcoin.conf
+check_status $?
+fi
+
+echo ''
+cwarn "Creating mining scripts..."
+cd ..
+check_status $?
+echo '#!/bin/bash
+export DISPLAY=:0
+export GPU_USE_SYNC_OBJECTS=1
+export GPU_MAX_ALLOC_PERCENT=100
+bfgminer --config ~/Mining/configs/worldcoin.conf' > ./worldcoin.sh
+check_status $?
+chmod +x worldcoin.sh
+check_status $?
+
+echo '#!/bin/bash
+export DISPLAY=:0
+export GPU_USE_SYNC_OBJECTS=1
+export GPU_MAX_ALLOC_PERCENT=100
+bfgminer --config ~/Mining/configs/litecoin.conf' > ./litecoin.sh
+check_status $?
+chmod +x litecoin.sh
+check_status $?
+
+echo '#!/bin/bash
+export DISPLAY=:0
+export GPU_USE_SYNC_OBJECTS=1
+export GPU_MAX_ALLOC_PERCENT=100
+bfgminer --config ~/Mining/configs/dogecoin.conf' > ./dogecoin.sh
+check_status $?
+chmod +x dogecoin.sh
+check_status $?
+
+echo ''
+cwarn "Creating desktop shortcuts..."
+cd ~/Desktop
+check_status $?
+
+dogeshort="[Desktop Entry]\nName=Mine Dogecoin\nComment=Starts BFGMiner for Dogecoin\nExec=`echo ~`/Mining/dogecoin.sh\nIcon=redhat-tools\nTerminal=true\nType=Application"
+echo -e $dogeshort > ./dogecoin.desktop
+check_status $?
+
+liteshort="[Desktop Entry]\nName=Mine Litecoin\nComment=Starts BFGMiner for Litecoin\nExec=`echo ~`/Mining/litecoin.sh\nIcon=redhat-tools\nTerminal=true\nType=Application"
+echo -e $liteshort > ./litecoin.desktop
+check_status $?
+
+worldshort="[Desktop Entry]\nName=Mine Worldcoin\nComment=Starts BFGMiner for Worldcoin\nExec=`echo ~`/Mining/worldcoin.sh\nIcon=redhat-tools\nTerminal=true\nType=Application"
+echo -e $worldshort > ./worldcoin.desktop
+check_status $?
+
+monitorshort="[Desktop Entry]\nName=BFGMiner Monitor\nComment=Starts BFGMiner Monitor Webpage\nExec=firefox http://127.0.0.1\nIcon=firefox\nType=Application"
+echo -e $monitorshort > ./monitor.desktop
+check_status $?
+
+echo ''
+cinfo "All done!!!"
+echo ''
+cwarn "NOTE!!!: You need to set your specific BFGminer configuration, such as GPU and worker settings in each configuration file. These files are located in `echo ~`/Mining/configs"
+echo ''
+cwarn "For more information on the settings that can be set in these files, please visit https://github.com/luke-jr/bfgminer/blob/bfgminer/README"
+echo ''
+cinfo "If you found this utility useful, please consider donating whatever you would like at the following addresses:"
+echo "Bitcoin:   12tok8QAH6ZAY8H7YDHDNE87E1XjDFY7Uj"
+echo "Litecoin:  LasEiSR9NTi4vaApDQT7xKQhxCP2CXWxpB"
+echo "Dogecoin:  DJjuynL3Fm9XH9EZPajsqJPW3dxPKQEhsN"
+echo "Goldcoin:  EArdUoBrRmKbfiiMzMgRbiUkARFnxGCDRa"
+echo "Noirbits:  EDNHNGjLKXiBf7HGc3ye3ZY3ZTFabdhRVK"
+echo "Worldcoin: WYS8RzwuAhkvKpRg2riYboNFZTUjkrGgqc"
+echo ''
+cerr "YOU MUST NOW REBOOT YOUR SYSTEM TO COMPLETE THE INSTALLATION"
+cerr "Exiting, please reboot your system as soon as possible."
+rm -rf ~/mine-working
+check_status $?
+exit
+
