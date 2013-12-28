@@ -357,17 +357,25 @@ check_status $?
 dogeshort="[Desktop Entry]\nName=Mine Dogecoin\nComment=Starts BFGMiner for Dogecoin\nExec=`echo ~`/Mining/dogecoin.sh\nIcon=redhat-tools\nTerminal=true\nType=Application"
 echo -e $dogeshort > ./dogecoin.desktop
 check_status $?
+chmod +x ./dogecoin.desktop
+check_status $?
 
 liteshort="[Desktop Entry]\nName=Mine Litecoin\nComment=Starts BFGMiner for Litecoin\nExec=`echo ~`/Mining/litecoin.sh\nIcon=redhat-tools\nTerminal=true\nType=Application"
 echo -e $liteshort > ./litecoin.desktop
+check_status $?
+chmod +x ./litecoin.desktop
 check_status $?
 
 worldshort="[Desktop Entry]\nName=Mine Worldcoin\nComment=Starts BFGMiner for Worldcoin\nExec=`echo ~`/Mining/worldcoin.sh\nIcon=redhat-tools\nTerminal=true\nType=Application"
 echo -e $worldshort > ./worldcoin.desktop
 check_status $?
+chmod +x ./worldcoin.desktop
+check_status $?
 
 monitorshort="[Desktop Entry]\nName=BFGMiner Monitor\nComment=Starts BFGMiner Monitor Webpage\nExec=firefox http://127.0.0.1\nIcon=firefox\nType=Application"
 echo -e $monitorshort > ./monitor.desktop
+check_status $?
+chmod +x ./monitor.desktop
 check_status $?
 
 echo ''
