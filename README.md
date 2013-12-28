@@ -1,4 +1,4 @@
-mining-bootstrap overview
+Overview
 =========================
 
 This script is intended to take an Ubuntu Linux distribution and install all necessary components for Scrypt coin mining with AMD GPUs.
