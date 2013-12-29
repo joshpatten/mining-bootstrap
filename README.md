@@ -56,3 +56,11 @@ Send me some coin(s)! You can send me whatever you like to to following addresse
     Goldcoin:  EArdUoBrRmKbfiiMzMgRbiUkARFnxGCDRa
     Noirbits:  EDNHNGjLKXiBf7HGc3ye3ZY3ZTFabdhRVK
     Worldcoin: WYS8RzwuAhkvKpRg2riYboNFZTUjkrGgqc
+    
+### AMD APP SDK Manual Download
+For those of you who are skeptical about the script downloading from an IP address instead of AMD's website there is a technical reason for this I couldn't overcome in a decent amount of time, and GitHub has a filesize limit of 100MB so I chose to host the site on one of my VPS servers. Rest assured that the MD5 hash of the AMD download server file and the file on my VPS server are identical, but if you still wish to manually download this file here's how:
+
+* Download the 64 bit linux SDK from [AMD's website](http://developer.amd.com/tools-and-sdks/heterogeneous-computing/amd-accelerated-parallel-processing-app-sdk/downloads/)
+* Place the file in ~/mine-working (create the folder mine-working in your home folder)
+
+Once you've done this the script will check and verify the MD5 hash of the file against the MD5 hash posted by AMD. If your file download is not corrupt they will match and the file will not be redownloaded, instead using your downloaded copy.
