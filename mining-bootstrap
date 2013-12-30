@@ -7,7 +7,7 @@ ATIPRESENT=`lspci | grep VGA | grep -c 'ATI Technologies Inc'`
 AMDSDKNAM="AMD-APP-SDK-v2.9-lnx64.tgz"
 AMDSDKSUM="24ca89856d41aa82dea8370b7a24fb4e"
 AMDDRVNAM="amd-catalyst-13.12-linux-x86.x86_64"
-AMDDRVSUM="ba320af09445d4617795c5de1fd4d391"
+AMDDRVSUM="2418a94b699fe8fdec01ccd32f684c90"
 
 # Display yellow warning output
 function cwarn() {
