@@ -17,7 +17,7 @@ What It Does
 ------------
 This script performs the following:
 
-+ Installs AMD Catalyst drivers (provided by Ubuntu fglrx-updates)
++ Installs AMD Catalyst drivers (choose between downloading latest AMD drivers or older Ubuntu provided drivers)
 + Installs AMD APP SDK (for openCL support)
 + Creates BFGMiner repository
 + Installs BFGMiner
