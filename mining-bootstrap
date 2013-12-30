@@ -159,7 +159,7 @@ do
 		cinfo "Build complete, installing..."
 		if [ -f  "fglrx_13.251-0ubuntu1_amd64.deb" ]
 		then
-			sudo dpkg --force-all --remove fglrx-updates fglrx-amdcccle fglrx-dev
+			sudo dpkg --force-all --remove fglrx-updates fglrx-amdcccle-updates fglrx-dev
 			sudo dpkg -i fglrx*.deb
 			check_status $?
 		else
