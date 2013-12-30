@@ -174,12 +174,8 @@ do
 		check_status $?
 		patch -p1 < ../kernel-3.9.1.patch
 		cwarn "Building AMD proprietary driver, this will take quite some time..."
-		sudo ./ati-installer.sh 13.251 --buildpkg --force
-		if [ $? -gt 1 ]
-        	then
-                	cerr "Something went wrong, please check you settings and try again."
-                	exit 1
-        	fi
+		sudo ./ati-installer.sh 13.251 --force --buildpkg
+		check_status $?
 		cinfo "Build complete, installing..."
 		cd ..
 		check_status $?
