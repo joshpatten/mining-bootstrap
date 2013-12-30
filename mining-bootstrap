@@ -144,11 +144,35 @@ do
 		check_status $?
 		chmod +x $AMDDRVNAM.run
 		check_status $?
+		echo -e '--- 13.12/common/lib/modules/fglrx/build_mod/kcl_acpi.c	2013-12-17 20:05:35.000000000 +0100
++++ 13.12/common/lib/modules/fglrx/build_mod/kcl_acpi.c	2013-12-19 18:40:18.386568588 +0100
+@@ -995,7 +995,11 @@
+ #endif
+     {
+         return KCL_ACPI_ERROR;
+-    }    
++    }
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,9,1)
++    ((acpi_tbl_table_handler)handler)(hdr);
++#else
+     ((acpi_table_handler)handler)(hdr);
++#endif
+     return KCL_ACPI_OK;
+-}
++}' > kernel-3.9.1.patch
+		check_status $?
 		if [ -f "fglrx*.deb" ]
 		then
 			rm -f fglrx*.deb
 			check_status $?
 		fi
+		cwarn "Extracting AMD proprietary driver package..."
+		./$AMDDRVNAM.run --extract patch-working
+		check_status $?
+		cwarn "Applying Kernel patch so AMD driver will build..."
+		cd patch-working
+		check_status $?
+		patch -p1 < ../kernel-3.9.1.patch
 		cwarn "Building AMD proprietary driver, this will take quite some time..."
 		sudo ./$AMDDRVNAM.run --force --buildpkg
 		if [ $? -gt 1 ]
@@ -157,6 +181,8 @@ do
                 	exit 1
         	fi
 		cinfo "Build complete, installing..."
+		cd ..
+		check_status $?
 		if [ -f  "fglrx_13.251-0ubuntu1_amd64.deb" ]
 		then
 			sudo dpkg --force-all --remove fglrx-updates fglrx-amdcccle-updates fglrx-dev
