@@ -6,6 +6,8 @@ RADEONPRESENT=`lspci | grep VGA | grep -c Radeon`
 ATIPRESENT=`lspci | grep VGA | grep -c 'ATI Technologies Inc'`
 AMDSDKNAM="AMD-APP-SDK-v2.9-lnx64.tgz"
 AMDSDKSUM="24ca89856d41aa82dea8370b7a24fb4e"
+AMDDRVNAM="amd-catalyst-13.12-linux-x86.x86_64"
+AMDDRVSUM="ba320af09445d4617795c5de1fd4d391"
 
 # Display yellow warning output
 function cwarn() {
@@ -112,9 +114,68 @@ then
 	check_status $?
 fi
 
-cinfo "Installing Ubuntu AMD driver packages, this will take some time..."
-sudo apt-get -y install fglrx-updates fglrx-amdcccle-updates
-check_status $?
+amddownload = ''
+while [ "$amddownload" != 'y' ] || [ "$amddownload" != 'Y' ] || [ "$amddownload"  != 'n' ] || [ "$amddownload" != 'N' ]
+do
+	cwarn "The AMD proprietary drivers included with Ubuntu do not support newer R7/R9 series cards. It is recommended to download the latest AMD proprietary drivers from AMD's website."
+	read -p "Download latest AMD proprietary drivers from AMD's website? (y/n): " amddownload
+	if [ "$amddownload" == 'y' ] || [ "$amddownload" == 'Y' ]
+	then
+		sudo apt-get -y install curl dkms lib32gcc1 libc6-i386 libqtgui4 devscripts libcurl4-openssl-dev libncurses5-dev libglu1-mesa-dev linux-headers-generic dh-make dh-modaliases execstack
+		check_status $?
+		if [ -f $AMDDRVNAM.zip ]
+		then
+			cwarn "File $AMDDRVNAM.zip exists, checking md5 hash..."
+			if [ "$AMDDRVSUM" == `md5sum ./$AMDDRVNAM.zip | awk '{print $1}'` ]
+			then
+				cinfo "File is OK! Skipping Download."
+			else
+				cerr "File is corrupt, redownloading..."
+				rm -f amd-catalyst*
+				wget --referer "http://support.amd.com/en-us/download/desktop?os=Linux%20x86_64" "http://www2.ati.com/drivers/linux/$AMDDRVNAM.zip"
+				check_status $?
+			fi
+		else
+			cinfo "Downloading and installing AMD driver from AMD website..."
+			wget --referer "http://support.amd.com/en-us/download/desktop?os=Linux%20x86_64" "http://www2.ati.com/drivers/linux/$AMDDRVNAM.zip"
+			check_status $?
+		fi
+		unzip -o $AMDDRVNAM.zip
+		check_status $?
+		chmod +x $AMDDRVNAM.run
+		check_status $?
+		if [ -f "fglrx*.deb" ]
+		then
+			rm -f fglrx*.deb
+			check_status $?
+		fi
+		cwarn "Building AMD proprietary driver, this will take quite some time..."
+		sudo ./$AMDDRVNAM.run --force --buildpkg
+		if [ $? -gt 1 ]
+        	then
+                	cerr "Something went wrong, please check you settings and try again."
+                	exit 1
+        	fi
+		cinfo "Build complete, installing..."
+		if [ -f  "fglrx*.deb" ]
+		then
+			sudo dpkg --force-all --remove fglrx-updates fglrx-amdcccle fglrx-dev
+			sudo dpkg -i fglrx*.deb
+			check_status $?
+		else
+			check_status 1
+		fi
+		break
+	elif [ "$amddownload" == 'n' ] || [ "$amddownload" == 'N' ]
+	then
+		cinfo "Installing Ubuntu AMD driver packages..."
+		sudo apt-get -y install fglrx-updates fglrx-amdcccle-updates
+		check_status $?
+		break
+	else
+		cerr "Please make a valid selection (y/n)."
+	fi
+done
 
 cinfo "Configuring AMD graphics adapters..."
 sudo amdconfig --adapter=all --initial
