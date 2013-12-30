@@ -114,7 +114,7 @@ then
 	check_status $?
 fi
 
-amddownload = ''
+amddownload=''
 while [ "$amddownload" != 'y' ] || [ "$amddownload" != 'Y' ] || [ "$amddownload"  != 'n' ] || [ "$amddownload" != 'N' ]
 do
 	cwarn "The AMD proprietary drivers included with Ubuntu do not support newer R7/R9 series cards. It is recommended to download the latest AMD proprietary drivers from AMD's website."
