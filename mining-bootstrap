@@ -3,6 +3,7 @@
 OSNAME=`cat /etc/issue | awk '{print $1}'`
 OSNUM=`cat /etc/issue | awk '{print $2}'`
 RADEONPRESENT=`lspci | grep VGA | grep -c Radeon`
+ATIPRESENT=`lspci | grep VGA | grep -c 'ATI Technologies Inc'`
 AMDSDKNAM="AMD-APP-SDK-v2.9-lnx64.tgz"
 AMDSDKSUM="24ca89856d41aa82dea8370b7a24fb4e"
 
@@ -41,8 +42,15 @@ function check_status() {
 
 if [ $RADEONPRESENT -lt 1 ]
 then
-	cerr "It seems you don't have an AMD Radeon present. Can't continue without one..."
-	exit 1
+	if [ $ATIPRESENT -lt 1 ]
+	then
+		cerr "It seems you don't have an AMD Radeon present. Can't continue without one..."
+		exit 1
+	else
+		cinfo "Found the following Radeon device(s):"
+		cwarn `lspci | grep VGA | grep 'ATI Technologies Inc' | awk 'match($0,"controller:"){print substr($0,RSTART+12)}'`
+		cinfo "Continuing..."
+	fi
 else 
 	cinfo "Found the following Radeon device(s):"
 	cwarn `lspci | grep VGA | grep Radeon | awk 'match($0,"controller:"){print substr($0,RSTART+12)}'`
