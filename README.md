@@ -9,7 +9,7 @@ System Requirements
 -------------------
 The following are the system requirements for this script:
 
-+ Ubuntu/Kubuntu/Xubuntu version 13.04 or later
++ Ubuntu/Kubuntu/Xubuntu version 13.10
 + 64 bit (are you really still running a 32 bit CPU and OS?)
 + AMD GPU capable of mining
 
