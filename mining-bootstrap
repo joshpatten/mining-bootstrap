@@ -44,15 +44,8 @@ function check_status() {
 
 if [ $RADEONPRESENT -lt 1 ]
 then
-	if [ $ATIPRESENT -lt 1 ]
-	then
-		cerr "It seems you don't have an AMD Radeon present. Can't continue without one..."
-		exit 1
-	else
-		cinfo "Found the following Radeon device(s):"
-		cwarn `lspci | grep VGA | grep 'ATI Technologies Inc' | awk 'match($0,"controller:"){print substr($0,RSTART+12)}'`
-		cinfo "Continuing..."
-	fi
+	cerr "It appears you don't have an AMD Radeon present however we will install anyway as many vendor strings are inaccurate. Here is your card information:"
+	cwarn `lspci | grep VGA`
 else 
 	cinfo "Found the following Radeon device(s):"
 	cwarn `lspci | grep VGA | grep Radeon | awk 'match($0,"controller:"){print substr($0,RSTART+12)}'`
