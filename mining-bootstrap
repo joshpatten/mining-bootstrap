@@ -193,7 +193,7 @@ do
 done
 
 cinfo "Configuring AMD graphics adapters..."
-sudo amdconfig --adapter=all --initial
+sudo amdconfig --adapter=all --initial --force
 check_status $?
 
 cinfo "Downloading AMD APP SDK..."
